@@ -1,0 +1,422 @@
+// BNF for IBIS 2.0 published on the public IBIS reflector September, 1994.
+// from Bob Ross of Interconnectix and Steffen Rochel of Anacad EES
+// No license was attached or defined at the time.
+// Original discussion and text can be found on the IBIS archives at:
+// https://ibis.org/email/hm/ibis/1993-2001/0821.html
+
+//*** Changes in "keywords ... and added next line:
+
+// Remarks
+// comments starts with "//"
+// keywords are enclosed by '[' '...' ']'. An underbar "_" may be substituted
+// for any internal single space and a single space may be substituted for
+// an internal underbar. No space may exist between the '[' or ']' and
+// the internal keyword.
+// defined characters and verbatium strings are enclosed by '...'
+// a set is specified by { }, options are enclosed by [ ... ]
+// "|" defines an alternative
+
+ibisfile ::= ibisfileheader sections '[' 'end' ']'
+
+packagefile ::= packagefileheader packagedefinitionsections '[' 'end' ']'
+
+ibisfileheader ::= ibisversion ibisfilename fileversion fileheaderitems
+
+packagefileheader ::= ibisversion packagefilename fileversion fileheaderitems
+
+fileheaderitems ::= [ commentchar ] [ date ] [ source ] [ notes ] [ disclaimer ]
+                    [ copyright ]
+
+ibisversion ::= '[' 'ibis ver' ']' string
+
+commentchar ::= '[' 'comment char' ']' commentstring
+
+commentstring ::= comment_character '_char'
+
+//*** Some comment characters used "\" so I changed the list and
+//*** put the permitted characters in ASCII order within ' '.
+
+comment_character ::= '!' | '"' | '#' | '$' | '%' | '&' | ''' | '(' |
+                      ')' | '*' | ',' | ':' | ';' | '<' | '>' | '?' |
+                      '@' | '\' | '^' | '`' | '{' | '|' | '}' | '~'
+
+ibisfilename ::= '[' 'file name' ']' ibisfilenamestring
+
+ibisfilenamestring ::= string8 '.ibs'
+
+packagefilename ::= '[' 'file name' ']' packagefilenamestring
+
+packagefilenamestring ::= string8 '.pkg'
+
+fileversion ::= '[' 'file rev' ']' string
+
+date ::= '[' 'date' ']' string40
+
+//*** The following four keywords do not have a string length limitation.
+//*** Even copyright can extend to several lines.
+
+source ::= '[' 'source' ']' string
+
+notes ::= '[' 'notes' ']' string
+
+disclaimer ::= '[' 'disclaimer' ']' string
+
+copyright ::= '[' 'copyright' ']' string
+
+sections ::= componentdefinitionsection [ modeldefinitionsections ]
+             [ packagedefinitionsection ]
+
+modeldefinitionsections ::= { modeldefinitionsection }
+
+packagedefinitionsections ::= { packagedefinitionsection }
+
+componentdefinitionsection ::= component manufacturer package pin
+                               [ package_model ] [ pin_mapping ]
+                               [ diff_pin ]
+
+component ::= '[' 'component' ']' string40
+
+manufacturer ::= '[' 'manufacturer' ']' string40
+
+package ::= '[' 'package' ']' package_rlc
+
+package_rlc ::= 'R_pkg' typ_min_max
+                 'L_pkg' typ_min_max
+                 'C_pkg' typ_min_max
+
+typ_min_max ::= real real_na real_na
+
+real_na ::= real | 'na'
+
+real_na9 ::= real9 | 'na'
+
+//*** This was unclear, so I made a change here
+
+ //pin_with_package_info
+pin ::= pin_wpi
+        | pin_data
+
+//*** Sub-parameter order choices added
+
+pin_wpi ::= pin_header rlc_pin_heading pin_entry_set_wpi
+
+rlc_pin_heading ::= 'R_pin' 'L_pin' 'C_pin' |
+                    'R_pin' 'C_pin' 'L_pin' |
+                    'L_pin' 'C_pin' 'R_pin' |
+                    'L_pin' 'R_pin' 'C_pin' |
+                    'C_pin' 'R_pin' 'L_pin' |
+                    'C_pin' 'L_pin' 'R_pin'
+
+pin_data ::= pin_header pin_entry_set
+
+pin_header ::= '[' 'pin' ']' 'signal_name' 'model_name'
+
+pin_entry_set_wpi ::= pin_entry_wpi { pin_entry_wpi }
+
+pin_entry_set ::= pin_entry { pin_entry }
+
+//*** Even with package information heading, the last 3 columns are
+//*** optional for any line. Thus the "[" and "]".
+
+pin_entry_wpi ::= pin_entry [ real_na9 real_na9 real_na9 ]
+
+//*** model_identifier is required, so I removed the "[" and "]"
+
+pin_entry ::= pin_identifier signal_identifier model_identifier
+
+pin_identifier ::= string5
+
+signal_identifier ::= string20
+
+model_identifier ::= string20 | 'power' | 'gnd' | 'nc'
+
+package_model ::= '[' 'package model' ']' string40
+
+//*** Last two subparameters are optional and pin_mapping follows similar
+//*** syntax to diff_pin. This whole section has been modified.
+//*** bus_name allows 'nc'
+
+pin_mapping ::= pin_mapping_wr
+                | pin_mapping_data
+
+pin_mapping_wr ::= pin_mapping_header clamp_ref_name pin_mapping_value_set_wr
+
+pin_mapping_data ::= pin_mapping_header pin_mapping_value_set
+
+pin_mapping_header ::= '[' 'pin mapping' ']' 'pulldown_ref' 'pullup_ref'
+
+clamp_ref_name ::= 'gnd_clamp_ref' 'power_clamp_ref'
+
+pin_mapping_value_set ::= pin_mapping_values { pin_mapping_values }
+
+pin_mapping_value_set_wr ::= pin_mapping_values_wr { pin_mapping_values_wr }
+
+pin_mapping_values_wr ::= pin_identifier bus_name bus_name [ bus_name bus_name ]
+
+pin_mapping_values ::= pin_identifier bus_name bus_name
+
+bus_name ::= string15 | 'nc'
+
+// pin_identifer ::= string5 defined previously
+
+diff_pin ::= diff_pin_wr
+             | diff_pin_data
+
+diff_pin_wr ::= diff_pin_header delay_range_name diff_pin_value_set_wr
+
+diff_pin_data ::= diff_pin_header diff_pin_value_set
+
+diff_pin_header ::= '[' 'diff_pin' ']' 'inv_pin' 'vdiff' 'tdelay_typ'
+
+delay_range_name ::= 'tdelay_min' 'tdelay_max'
+
+diff_pin_value_set ::= diff_pin_values { diff_pin_values }
+
+diff_pin_value_set_wr ::= diff_pin_values_wr { diff_pin_values_wr }
+
+//*** Last two entries can be optional
+
+diff_pin_values_wr ::= diff_pin_values [ real_na9 real_na9 ]
+
+diff_pin_values ::= string5 string5 real9 real_na9
+
+modeldefinitionsection ::= '[' 'model' ']' model_name model
+
+model_name ::= string20
+
+model ::= model_of_type_one | model_of_type_two | model_of_type_terminator
+
+model_of_type_one ::= modeltype_one modelentry_one
+
+model_of_type_two ::= modeltype_two modelentry_two
+
+model_of_type_terminator ::= modeltype_terminator modelentry_terminator
+
+modeltype_one ::= 'Model_type' modeltype_one_identifier
+
+modeltype_one_identifier ::= 'Input' | 'I/O' | 'I/O_open_drain' |
+                             'I/O_open_sink' | 'I/O_open_source' |
+                             'Input_ECL' | 'I/O_ECL'
+
+modeltype_two ::= 'Model_type' modeltype_two_identifier
+
+modeltype_two_identifier ::= '3-state' | 'Open_sink' | 'Open_drain' |
+                             'Open_source' | 'Output' | 'Output_ECL'
+
+modeltype_terminator ::= 'Model_type' 'Terminator'
+
+modelentry_one ::= c_comp vinl vinh modelentry
+
+modelentry_two ::= c_comp modelentry
+
+modelentry_terminator ::= c_comp modelentry
+
+modelentry ::= [ polarity ] [ enable ] [ vmeas ] [ cref ] [ rref ] [ vref ]
+                [ temperature_range ] [ model_range ] [ pulldown ] [ pullup ]
+                [ gndclamp ] [ powerclamp ] [ rpower ] [ rgnd ] [ ramp ]
+                [ rac ] [ cac ] [ waveformtable ]
+
+//*** Model_refs and voltage_range requirement clarification below:
+
+model_range ::= voltage_range |
+                all_model_refs |
+                voltage_range model_refs
+
+all_model_refs ::= pullup_reference pulldown_reference gnd_clamp_reference
+                         power_clamp_reference
+
+model_refs ::= [ pullup_reference ] [ pulldown_reference ] [ gnd_clamp_reference ]
+               [ power_clamp_reference ]
+
+c_comp ::= 'C_comp' typ_min_max
+
+polarity ::= 'Polarity' [ 'Non-Inverting' | 'Inverting' ]
+
+enable ::= 'Enable' [ 'Active-High' | 'Active-Low' ]
+
+vinl ::= 'Vinl' '=' voltage_spec
+
+vinh ::= 'Vinh' '=' voltage_spec
+
+vmeas ::= 'Vmeas' '=' voltage_spec
+
+cref ::= 'Cref' '=' capacitance_spec
+
+rref ::= 'Rref' '=' resistance_spec
+
+vref ::= 'Vref' '=' voltage_spec
+
+voltage_spec ::= real
+
+capacitance_spec ::= real
+
+resistance_spec ::= real
+
+temperature_range ::= '[' 'temperature range' ']' typ_min_max
+
+voltage_range ::= '[' 'voltage range' ']' typ_min_max
+
+pullup_reference ::= '[' 'pullup reference' ']' typ_min_max
+
+pulldown_reference ::= '[' 'pulldown reference' ']' typ_min_max
+
+power_clamp_reference ::= '[' 'power clamp reference' ']' typ_min_max
+
+gnd_clamp_reference ::= '[' 'gnd clamp reference' ']' typ_min_max
+
+pulldown ::= '[' 'pulldown' ']' videfinitions
+
+pullup ::= '[' 'pullup' ']' videfinitions
+
+gndclamp ::= '[' 'gnd_clamp' ']' videfinitions
+
+powerclamp ::= '[' 'power_clamp' ']' videfinitions
+
+rpower ::= '[' 'rpower' ']' typ_min_max
+
+rgnd ::= '[' 'rgnd' ']' typ_min_max
+
+videfinitions ::= videfinition { videfinition }
+
+videfinition ::= real typ_min_max
+
+//*** Both dvdtr and dvdtf are required
+
+ramp ::= '[' 'ramp' ']' dvdtr dvdtf [ r_load ]
+
+dvdtr ::= 'dV/dt_r' typ_min_max_rate
+
+dvdtf ::= 'dV/dt_r' typ_min_max_rate
+
+r_load ::= 'R_load' '=' real
+
+typ_min_max_rate ::= rate [ rate | 'na' ] [ rate | 'na' ]
+
+rac ::= '[' 'rac' ']' typ_min_max
+
+cac ::= '[' 'cac' ']' typ_min_max
+
+waveformtable ::= { waveform_data }
+
+waveform_data ::= '[' 'rising waveform' | 'falling waveform' ']'
+                  waveform_header waveform_table
+
+//*** Added v_fixture_min and v_fixture_max
+
+waveform_header ::= r_fixture v_fixture [ c_fixture ] [ l_fixture ] [ r_dut ]
+                    [ l_dut ] [ c_dut ] [v_fixture_min] [v_fixture_max]
+
+r_fixture ::= 'R_fixture' '=' real
+
+v_fixture ::= 'V_fixture' '=' real
+
+v_fixture_min ::= 'V_fixture_min' '=' real
+
+v_fixture_max ::= 'V_fixture_max' '=' real
+
+c_fixture ::= 'C_fixture' '=' real
+
+l_fixture ::= 'L_fixture' '=' real
+
+r_dut ::= 'R_dut' '=' real
+
+l_dut ::= 'L_dut' '=' real
+
+c_dut ::= 'C_dut' '=' real
+
+waveform_table ::= { waveform_point }
+
+waveform_point ::= time_point typ_min_max
+
+time_point ::= real
+
+rate ::= real '/' real
+
+packagedefinitionsection ::= definepackage package_header package_description
+                             endpackage
+
+definepackage ::= '[' 'define package model' ']' string40
+
+//*** Insert "number_pins" and "pin_numbers" definition corrected"
+
+package_header ::= manufacturer oem description number_pins pin_numbers pin_names
+
+oem ::= '[' 'oem' ']' string40
+
+description ::= '[' 'description' ']' string60
+
+//*** Correction here and define "pin_numbers"
+
+number_pins ::= '[' 'number of pins' ']' pos_integer
+
+pin_numbers ::= '[' 'pin numbers' ']' pin_names
+
+pin_names ::= pin_name { pin_name }
+
+pin_name ::= string5
+
+package_description ::= '[' 'model data' ']' model_body '[' 'end model data' ']'
+
+model_body ::= inductance_matrix capacitance_matrix [ resistance_matrix ]
+
+inductance_matrix ::= '[' 'inductance matrix' ']' matrix
+
+capacitance_matrix ::= '[' 'capacitance matrix' ']' matrix
+
+resistance_matrix ::= '[' 'resistance matrix' ']' matrix
+
+matrix ::= full_matrix | banded_matrix | sparse_matrix
+
+full_matrix ::= 'full matrix' matrix_line { matrix_line }
+
+//*** Refinded matrix_line definitions for banded and sparce matricies and
+//*** broke out "row". Corrected bandwidth spelling.
+
+banded_matrix ::= 'banded matrix' bandwidth banded_matrix_line
+                  { banded_matrix_line }
+
+sparse_matrix ::= 'sparse matrix' sparce_matrix_line
+                  { sparce_matrix_line }
+
+bandwidth ::= '[' 'bandwidth' ']' pos_integer
+
+matrix_line ::= row real { real }
+
+banded_matrix_line ::= row real
+
+sparce_matrix_line ::= row string5 real { string5 real }
+
+row ::= '[' 'row' ']' string5
+
+endpackage ::= '[' 'end package model' ']'
+
+//*** Made explicit that characters can follow real, certain FIRST characters are
+//*** Units
+
+real ::= <real_number> [ anychar { anychar } ]
+
+real9 ::= <real_with_max_9_characters>
+
+//*** Put in extended unit definition using ' '
+
+anychar ::= unit | char
+
+unit ::= 'f' | 'p' | 'n' | 'u' | 'm' | 'k' | 'M" | 'G' | 'T'
+
+string5 ::= <character_string_with_max_5_characters> 
+
+string8 ::= <character_string_with_max_8_characters>
+
+string15 ::= <character_string_with_max_15_characters>
+ 
+string20 ::= <character_string_with_max_20_characters>
+
+string40 ::= <character_string_with_max_40_characters>
+
+string60 ::= <character_string_with_max_60_characters>
+
+string ::= <unlimited_character_string>
+
+char ::= <valid_character>
+
+pos_integer ::= <positive_decimal_integer>
